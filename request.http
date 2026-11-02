@@ -1,0 +1,59 @@
+### Kayıt ol
+POST http://127.0.0.1:5003/register
+Content-Type: application/json
+
+{
+    "name": "John Doe",
+    "email": "john@doe.com",
+    "password": "password123"
+}
+
+### Aynı e-postayla tekrar kayıt (409 beklenir)
+POST http://127.0.0.1:5003/register
+Content-Type: application/json
+
+{
+    "name": "John Again",
+    "email": "JOHN@doe.com",
+    "password": "password123"
+}
+
+### Hatalı kayıt (400 beklenir)
+POST http://127.0.0.1:5003/register
+Content-Type: application/json
+
+{
+    "name": "",
+    "email": "not-an-email",
+    "password": "123"
+}
+
+### Yanlış şifreyle giriş (401 beklenir)
+POST http://127.0.0.1:5003/login
+Content-Type: application/json
+
+{
+    "email": "john@doe.com",
+    "password": "wrongpassword"
+}
+
+### Giriş yap (cevaptaki token'ı aşağıda otomatik kullanacağız)
+# @name login
+POST http://127.0.0.1:5003/login
+Content-Type: application/json
+
+{
+    "email": "john@doe.com",
+    "password": "password123"
+}
+
+### Token ile korumalı sayfa (200 beklenir)
+GET http://127.0.0.1:5003/me
+Authorization: Bearer {{login.response.body.token}}
+
+### Token olmadan (401 beklenir)
+GET http://127.0.0.1:5003/me
+
+### Sahte token ile (401 beklenir)
+GET http://127.0.0.1:5003/me
+Authorization: Bearer sahte.token.burada
