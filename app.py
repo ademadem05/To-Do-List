@@ -70,6 +70,86 @@ def me():
 def not_found(e):
     return jsonify({"message" : "Not found"}), 404
 
+def validate_todo(data):
+    if not isinstance(data, dict):
+        return ["Request body must be a JSON object"]
+
+    errors = []
+    title = data.get("title")
+    description = data.get("description")
+
+    if not isinstance(title, str) or not title.strip():
+        errors.append("'title' is required and must be a non-empty string")
+    if not isinstance(description, str):
+        errors.append("'description' is required and must be a string")
+
+    return errors
+
+@app.route("/todos", methods=["POST"])
+@login_required
+def create_todo():
+    data = request.get_json(silent= True)
+
+    errors = validate_todo(data)
+    if errors:
+        return jsonify({"errors": errors}), 400
+    todo = db.create_todo(g.user_id, data["title"].strip(), data["description"].strip())
+    return jsonify(todo), 201
+
+
+@app.route("/todos", methods=["GET"])
+@login_required
+def list_todos():
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+    term = request.args.get("term")
+
+    page = max(page,1)
+    limit = min(max(limit,1), 100)
+
+    todos, total = db.get_todos(g.user_id, page, limit, term)
+
+    return jsonify({
+        "data": todos,
+        "page": page,
+        "limit": limit,
+        "total": total,
+    }), 200
+
+
+@app.route("/todos/<int:todo_id>", methods=["PUT"])
+@login_required
+def update_todo(todo_id):
+    todo = db.get_todo(todo_id)
+
+    if todo is None:
+        return jsonify({"message": "Todo not found"}), 404
+    if todo["user_id"] != g.user_id:
+        return jsonify({"message": "Forbidden"}), 403
+    data = request.get_json(silent=True)
+    errors = validate_todo(data)
+    if errors:
+        return jsonify({"errors": errors}), 400
+
+    updated = db.update_todo(todo_id, data["title"].strip(), data["description"].strip())
+    return jsonify(updated), 200
+
+
+@app.route("/todos/<int:todo_id>", methods=["DELETE"])
+@login_required
+def delete_todo(todo_id):
+    # Silmeden önce aynı iki kontrol
+    todo = db.get_todo(todo_id)
+    if todo is None:
+        return jsonify({"message": "Todo not found"}), 404
+    if todo["user_id"] != g.user_id:
+        return jsonify({"message": "Forbidden"}), 403
+
+    db.delete_todo(todo_id)
+    return "", 204
+
+
+
 @app.errorhandler(405)
 def method_not_allowed(e):
     return jsonify({"message" : "Method not allowed"}), 405

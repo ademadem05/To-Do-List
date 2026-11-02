@@ -57,3 +57,79 @@ GET http://127.0.0.1:5003/me
 ### Sahte token ile (401 beklenir)
 GET http://127.0.0.1:5003/me
 Authorization: Bearer sahte.token.burada
+
+
+### Yapılacak oluştur (John)
+POST http://127.0.0.1:5003/todos
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+    "title": "Buy groceries",
+    "description": "Buy milk, eggs, and bread"
+}
+
+### İkinci yapılacak (John)
+POST http://127.0.0.1:5003/todos
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+    "title": "Pay bills",
+    "description": "Pay electricity and water bills"
+}
+
+### Listele (sayfa 1, limit 1)
+GET http://127.0.0.1:5003/todos?page=1&limit=1
+Authorization: Bearer {{login.response.body.token}}
+
+### Ara
+GET http://127.0.0.1:5003/todos?term=milk
+Authorization: Bearer {{login.response.body.token}}
+
+### Güncelle (John kendi yapılacağını)
+PUT http://127.0.0.1:5003/todos/1
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+    "title": "Buy groceries",
+    "description": "Buy milk, eggs, bread, and cheese"
+}
+
+### İkinci kullanıcı kaydı (Jane)
+# @name jane
+POST http://127.0.0.1:5003/register
+Content-Type: application/json
+
+{
+    "name": "Jane Doe",
+    "email": "jane@doe.com",
+    "password": "password456"
+}
+
+### Jane, John'un yapılacağını güncellemeye çalışır (403 beklenir)
+PUT http://127.0.0.1:5003/todos/1
+Authorization: Bearer {{jane.response.body.token}}
+Content-Type: application/json
+
+{
+    "title": "Hacked",
+    "description": "Not yours"
+}
+
+### Jane, John'un yapılacağını silmeye çalışır (403 beklenir)
+DELETE http://127.0.0.1:5003/todos/1
+Authorization: Bearer {{jane.response.body.token}}
+
+### Jane'in listesi (boş olmalı)
+GET http://127.0.0.1:5003/todos
+Authorization: Bearer {{jane.response.body.token}}
+
+### John kendi yapılacağını siler (204 beklenir)
+DELETE http://127.0.0.1:5003/todos/1
+Authorization: Bearer {{login.response.body.token}}
+
+### Olmayan yapılacak (404 beklenir)
+DELETE http://127.0.0.1:5003/todos/999
+Authorization: Bearer {{login.response.body.token}}

@@ -91,16 +91,28 @@ def delete_todo(todo_id):
     with get_connection() as conn:
         conn.execute("DELETE FROM todos WHERE id =?", (todo_id,))
 
-def get_todos (user_id, page, limit):
+def get_todos (user_id, page, limit, term=None):
     offset = (page - 1) * limit  
+
+    where = "WHERE user_id = ?"
+    params = [user_id]
+
+    # Arama terimi varsa koşula ekle
+    if term:
+        where += " AND (title LIKE ? OR description LIKE ?)"
+        pattern = f"%{term}%"
+        params += [pattern, pattern]
+
+    
     with get_connection() as conn:
         total = conn.execute(
-            "SELECT COUNT(*) FROM todos WHERE user_id = ?", (user_id,)
+            f"SELECT COUNT(*) FROM todos {where}", params
         ).fetchone()[0]
         rows = conn.execute(
-            "SELECT * FROM todos WHERE user_id = ? ORDER BY id LIMIT ? OFFSET ?",
-            (user_id, limit, offset),
+            f"SELECT * FROM todos {where} ORDER BY id LIMIT ? OFFSET ?",
+            params + [limit, offset]
         ).fetchall()
+        
     return [todo_to_dict(row) for row in rows], total
 
 def get_user_by_email(email):
